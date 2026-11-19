@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  open-notebook-bilingual:
+    build: .
+    container_name: open-notebook-bilingual
+    restart: always
+    ports:
+      - "8502:8502"
+    environment:
+      - PORT=8502
+      - HOST=0.0.0.0
+      - DEFAULT_PROVIDER=deepseek
+      - DEFAULT_MODEL=deepseek-chat
+    volumes:
+      - ./data:/app/data

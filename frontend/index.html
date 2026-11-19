@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Notebook · Bilingual Studio (NotebookLM Parity)</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <span class="brand-logo">📓</span>
+      <h1 class="brand-title" data-i18n="app_title">Open Notebook</h1>
+      <span class="brand-badge" data-i18n="app_badge">双语增强版 · 对标 NotebookLM</span>
+    </div>
+
+    <!-- Notebook Selector -->
+    <div class="notebook-selector-group">
+      <select id="notebook-select" class="notebook-select"></select>
+      <button id="new-notebook-btn" class="btn btn-sm" title="新建笔记本">➕ <span data-i18n="new_notebook">新建</span></button>
+      <button id="delete-notebook-btn" class="btn-icon" title="删除笔记本">🗑️</button>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="header-controls">
+      <button id="lang-switch-btn" class="btn btn-sm">🌐 English</button>
+      <button id="theme-toggle-btn" class="btn btn-sm">🌙 深色</button>
+      <button id="open-settings-btn" class="btn btn-sm btn-primary">⚙️ <span data-i18n="settings_btn">模型设置</span></button>
+    </div>
+  </header>
+
+  <!-- 3-Column Main Layout -->
+  <main class="app-main-layout">
+
+    <!-- Column 1: Sources (左栏：来源资料) -->
+    <section class="column column-sources">
+      <div class="column-header">
+        <h2 data-i18n="sources_title">来源资料</h2>
+        <button id="add-source-btn" class="btn btn-sm btn-primary">➕ <span data-i18n="add_source">添加来源</span></button>
+      </div>
+      <div class="column-body">
+        <div class="sources-batch-controls">
+          <span id="sources-selected-count">已勾选 0 个来源</span>
+          <div>
+            <a href="#" id="select-all-sources-btn" style="margin-right: 8px;">全选</a>
+            <a href="#" id="unselect-all-sources-btn">取消</a>
+          </div>
+        </div>
+        <div id="sources-list" class="sources-list">
+          <!-- Rendered by sources.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 2: Chat & Grounding (中栏：智能问答与行内引用) -->
+    <section class="column column-chat">
+      <div class="column-header">
+        <h2 data-i18n="chat_title">来源对话与引用溯源</h2>
+        <button id="chat-clear-btn" class="btn btn-sm" title="清空对话">🧹 <span data-i18n="chat_clear">清空</span></button>
+      </div>
+
+      <div id="chat-messages" class="chat-messages-container">
+        <!-- Rendered by chat.js -->
+      </div>
+
+      <div class="chat-input-wrapper">
+        <div class="chat-input-box">
+          <textarea id="chat-input" class="chat-textarea" rows="2" placeholder="基于所选来源向 AI 提问...（支持中英文，回车发送）" data-i18n-ph="chat_placeholder"></textarea>
+          <button id="chat-send-btn" class="btn btn-primary">🚀 <span data-i18n="send_btn">发送</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 3: Studio & Notes (右栏：Studio 创意工坊与笔记) -->
+    <section class="column column-studio">
+      <div class="tabs-header">
+        <button id="tab-studio-btn" class="tab-btn active">✨ <span data-i18n="studio_tab">Studio 创意工坊</span></button>
+        <button id="tab-notes-btn" class="tab-btn">💡 <span data-i18n="notes_tab">知识笔记</span></button>
+      </div>
+
+      <!-- Studio Panel -->
+      <div id="panel-studio" class="column-body">
+        <p class="studio-desc" style="font-size:12px; color:var(--text-muted); margin-bottom:14px;" data-i18n="studio_desc">将多模态资料一键转化为高价值知识成果</p>
+        
+        <div id="studio-tools-grid" class="studio-grid">
+          <!-- Rendered by studio.js -->
+        </div>
+
+        <div class="studio-recent-section">
+          <h3 style="font-size:13px; font-weight:600; margin-bottom:8px;">已生成的工坊成果</h3>
+          <div id="studio-artifacts-list">
+            <!-- Rendered by studio.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Panel -->
+      <div id="panel-notes" class="column-body" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="font-size:13px; font-weight:600;">知识笔记库</h3>
+          <button id="new-note-btn" class="btn btn-sm btn-primary">➕ <span data-i18n="new_note">新建笔记</span></button>
+        </div>
+        <div id="notes-list" class="notes-list">
+          <!-- Rendered by notes.js -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modals -->
+
+  <!-- 1. Add Source Modal -->
+  <div id="add-source-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 data-i18n="add_source">添加知识来源</h3>
+        <button class="btn-icon" id="close-add-source-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs-header" style="margin-bottom: 16px;">
+          <button id="src-tab-file" class="tab-btn active">📄 本地文件 (PDF/Word/PPT/Excel)</button>
+          <button id="src-tab-url" class="tab-btn">🌐 网页 / YouTube 视频</button>
+          <button id="src-tab-text" class="tab-btn">📝 粘贴文本</button>
+        </div>
+
+        <!-- File Tab -->
+        <div id="src-body-file">
+          <div class="form-group">
+            <label>选择文档文件 (支持 .pdf, .docx, .pptx, .xlsx, .txt, .md):</label>
+            <input type="file" id="source-file-input" class="form-control" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.md,.markdown">
+          </div>
+          <button id="submit-file-btn" class="btn btn-primary btn-block">开始上传与解析</button>
+        </div>
+
+        <!-- URL Tab -->
+        <div id="src-body-url" style="display:none;">
+          <div class="form-group">
+            <label>输入网址链接或 YouTube 视频地址:</label>
+            <input type="url" id="source-url-input" class="form-control" placeholder="https://example.com/article 或 https://www.youtube.com/watch?v=...">
+          </div>
+          <button id="submit-url-btn" class="btn btn-primary btn-block">抓取并添加到来源</button>
+        </div>
+
+        <!-- Text Tab -->
+        <div id="src-body-text" style="display:none;">
+          <div class="form-group">
+            <label>资料标题 (选填):</label>
+            <input type="text" id="source-text-title" class="form-control" placeholder="例如：技术架构设计规范">
+          </div>
+          <div class="form-group">
+            <label>文本正文内容:</label>
+            <textarea id="source-text-content" class="form-control" rows="8" placeholder="粘贴您的文字内容..."></textarea>
+          </div>
+          <button id="submit-text-btn" class="btn btn-primary btn-block">保存为新来源</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Source Detail & Chunk Highlight Modal -->
+  <div id="source-detail-modal" class="modal-overlay">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h3 id="source-modal-title">来源原文详情</h3>
+        <button class="btn-icon" id="close-source-modal">✕</button>
+      </div>
+      <div class="modal-body" id="source-modal-body">
+        <!-- Rendered by sources.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Studio Artifact & Podcast Modal -->
+  <div id="studio-modal" class="modal-overlay">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h3 id="studio-modal-title">Studio 创意工坊</h3>
+        <button class="btn-icon" id="close-studio-modal">✕</button>
+      </div>
+      <div class="modal-body" id="studio-modal-body">
+        <!-- Rendered by studio.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Note Editor Modal -->
+  <div id="note-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>编辑笔记</h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>笔记标题:</label>
+          <input type="text" id="note-title-input" class="form-control" placeholder="笔记标题">
+        </div>
+        <div class="form-group">
+          <label>笔记正文:</label>
+          <textarea id="note-content-input" class="form-control" rows="8" placeholder="笔记内容..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button id="cancel-note-btn" class="btn">取消</button>
+          <button id="save-note-btn" class="btn btn-primary">保存笔记</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Settings Modal -->
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 data-i18n="settings_title">大模型与 API 配置</h3>
+        <button class="btn-icon" id="close-settings-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="settings-status-alert" class="alert" style="display:none; margin-bottom:12px; padding:10px; border-radius:6px; font-size:13px;"></div>
+        
+        <div class="form-group">
+          <label data-i18n="provider_label">选择 AI 服务商：</label>
+          <select id="setting-provider" class="form-control">
+            <option value="deepseek">DeepSeek (性价比极高，支持 V3 & R1 推理模型)</option>
+            <option value="openai">OpenAI (GPT-4o, GPT-4o-mini, o1, o3-mini)</option>
+            <option value="anthropic">Claude (Anthropic Claude 3.7 / 3.5 Sonnet)</option>
+            <option value="gemini">Google Gemini (Gemini 2.0 Flash, 1.5 Pro)</option>
+            <option value="kimi">Kimi / Moonshot (超长上下文)</option>
+            <option value="qwen">阿里通义千问 (DashScope)</option>
+            <option value="ollama">本地 Ollama (完全离线私有化运行)</option>
+            <option value="custom">自定义（OpenAI 兼容接口 / vLLM / OneAPI）</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="api_key_label">API Key：</label>
+          <input type="password" id="setting-api-key" class="form-control" placeholder="输入 API Key">
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="base_url_label">接口地址 (Base URL)：</label>
+          <input type="text" id="setting-base-url" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="model_label">模型 ID (Model Name)：</label>
+          <input type="text" id="setting-model" class="form-control">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+          <button id="test-conn-btn" class="btn">🔌 <span data-i18n="test_btn">测试连接</span></button>
+          <button id="save-settings-btn" class="btn btn-primary">💾 <span data-i18n="save_settings_btn">保存并启用</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/lib/marked.min.js"></script>
+  <script src="/static/js/i18n.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/components/mindmap.js"></script>
+  <script src="/static/js/components/sources.js"></script>
+  <script src="/static/js/components/notes.js"></script>
+  <script src="/static/js/components/chat.js"></script>
+  <script src="/static/js/components/studio.js"></script>
+  <script src="/static/js/components/settings.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

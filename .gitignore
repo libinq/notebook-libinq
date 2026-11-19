@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# Environment
+.env
+.env.local
+*.local
+
+# Local data / generated artifacts
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/audio/
+data/uploads/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
