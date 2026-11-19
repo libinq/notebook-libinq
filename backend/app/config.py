@@ -2,7 +2,13 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DATA_DIR = BASE_DIR / "data"
+
+# Serverless platforms (e.g. Vercel) only allow writes to /tmp, and the
+# bundled source directory is read-only at runtime.
+if os.getenv("VERCEL"):
+    DATA_DIR = Path("/tmp/data")
+else:
+    DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 AUDIO_DIR = DATA_DIR / "audio"
 DB_PATH = DATA_DIR / "notebook.db"
